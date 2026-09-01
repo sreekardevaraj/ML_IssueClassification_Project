@@ -86,6 +86,22 @@ python scripts/evaluate.py --data data/cases_5000.csv --artifact-dir models/prod
 
 The training job fits TF-IDF on the training records and saves `tfidf.joblib`. Synthetic metrics are pipeline-validation results, not customer-performance results.
 
+### Automatic retraining when the dataset changes
+
+You do not need to manually divide the dataset. `train.py` performs the stratified 80/20 split internally. To automatically retrain and evaluate whenever the CSV changes, run:
+
+```powershell
+python scripts/run_pipeline.py --data data/cases_5000.csv --watch
+```
+
+For a single run:
+
+```powershell
+python scripts/run_pipeline.py --data data/cases_5000.csv
+```
+
+After a watched retraining completes, restart the API so it loads the newly published artifacts. The watcher does not automatically restart running API processes.
+
 The generated 5K benchmark reports its metrics in `models/production/evaluation.json`. Because those records use controlled category templates, the metrics validate pipeline mechanics only; they do not establish production generalization. Replace the synthetic CSV with real support narratives before making accuracy claims.
 
 ## Checks

@@ -94,3 +94,14 @@ The generated 5K benchmark reports its metrics in `models/production/evaluation.
 pytest
 python -m compileall app
 ```
+
+## CI/CD
+
+The GitHub Actions workflow at `.github/workflows/ci-cd.yml` runs on pull requests and pushes to `main`. It compiles the application, runs tests, and builds both the API and Streamlit Docker images. Pushes to `main` and version tags publish images to GitHub Container Registry:
+
+```text
+ghcr.io/<owner>/support-case-classification-engine
+ghcr.io/<owner>/support-case-classification-engine-ui
+```
+
+In the GitHub repository settings, enable Actions and ensure the workflow has package write permission under **Settings > Actions > General > Workflow permissions**. Model artifacts and customer data remain excluded from the repository; publish them through your approved artifact storage or deployment process.

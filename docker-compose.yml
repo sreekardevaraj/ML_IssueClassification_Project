@@ -1,0 +1,31 @@
+services:
+  classifier:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./models:/app/models:ro
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    ports:
+      - "8501:8501"
+    environment:
+      SUPPORT_API_URL: http://classifier:8000
+    depends_on:
+      classifier:
+        condition: service_healthy
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true

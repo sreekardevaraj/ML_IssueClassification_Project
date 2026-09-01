@@ -18,37 +18,17 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    :root { --ink:#f5f7f2; --muted:#9daaa5; --panel:#202b2d; --panel-soft:#263436; --mint:#bcefd6; --coral:#ff765f; --line:#3a4849; }
-    .stApp { background:radial-gradient(circle at 78% 5%,#344948 0%,#182224 34%,#11191b 100%); color:var(--ink); }
-    [data-testid="stHeader"] { background:transparent; }
-    [data-testid="stSidebar"] { background:#101719; border-right:1px solid #2b393a; }
-    [data-testid="stSidebar"] * { color:#e9f1ec; }
-    [data-testid="stSidebar"] .stCaption { color:#8d9b96; }
-    .block-container { max-width:1180px; padding-top:3rem; padding-bottom:4rem; }
-    .hero { padding:1.2rem 0 2.2rem; border-bottom:1px solid rgba(188,239,214,.16); }
-    .eyebrow { color:var(--mint); font-size:.72rem; font-weight:800; letter-spacing:.16em; text-transform:uppercase; }
-    .hero h1 { color:var(--ink); font-family:Georgia,serif; font-size:4.8rem; letter-spacing:0; line-height:.92; margin:.6rem 0 1rem; }
-    .hero p { color:#b2bfba; font-size:1.04rem; line-height:1.6; max-width:650px; }
-    .metric { background:rgba(32,43,45,.78); border:1px solid var(--line); border-radius:8px; padding:1rem 1.1rem; min-height:82px; }
-    .metric-label { color:#8d9b96; font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; }
-    .metric-value { color:var(--ink); font-size:1.25rem; font-weight:750; margin-top:.45rem; overflow-wrap:anywhere; }
-    h2, h3 { color:var(--ink) !important; letter-spacing:0; }
-    label, .stMarkdown p { color:#c1cbc6; }
-    [data-testid="stTextInput"] input, [data-testid="stTextArea"] textarea { background:#202b2d; color:#f5f7f2; border:1px solid #435254; border-radius:7px; }
-    [data-testid="stTextInput"] input:focus, [data-testid="stTextArea"] textarea:focus { border-color:var(--mint); box-shadow:0 0 0 1px var(--mint); }
-    .stButton > button { background:var(--coral); color:#191b1a; border:0; border-radius:7px; font-weight:800; padding:.72rem 1rem; transition:transform .16s ease, background .16s ease; }
-    .stButton > button:hover { background:#ff927f; color:#191b1a; transform:translateY(-1px); }
-    [data-testid="stMetric"] { background:transparent; }
-    [data-testid="stMetricLabel"] { color:#91a09a; }
-    [data-testid="stMetricValue"] { color:var(--mint); }
-    [data-testid="stAlert"] { border-radius:7px; }
-    hr { border-color:rgba(188,239,214,.14); }
-    .result-kicker { color:var(--coral); font-size:.7rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
-    .result-title { color:var(--ink); font-family:Georgia,serif; font-size:2rem; margin:.25rem 0 1rem; }
-    .category-chip { display:inline-block; background:var(--mint); color:#162421; border-radius:5px; padding:.3rem .55rem; font-size:.78rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
-    .alt-row { display:flex; justify-content:space-between; border-bottom:1px solid #344244; padding:.65rem 0; color:#c5d0cb; }
-    .alt-score { color:var(--mint); font-variant-numeric:tabular-nums; }
-    @media (max-width: 700px) { .block-container { padding:1.5rem 1rem 3rem; } .hero h1 { font-size:3.5rem; } }
+    :root { --ink:#172126; --muted:#627178; --mint:#d9f5e9; --coral:#ff765f; --line:#dce6e1; }
+    .stApp { background:linear-gradient(135deg,#f8fbf8 0%,#eef5f1 52%,#fff7f1 100%); color:var(--ink); }
+    [data-testid="stSidebar"] { background:#172126; }
+    [data-testid="stSidebar"] * { color:#edf8f2; }
+    .hero { padding:1.3rem 0 .8rem; }
+    .eyebrow { color:#e65d49; font-size:.74rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; }
+    .hero h1 { color:var(--ink); font-family:Georgia,serif; font-size:3rem; line-height:1; margin:.35rem 0; }
+    .hero p { color:var(--muted); font-size:1rem; max-width:650px; }
+    .metric { background:rgba(255,255,255,.72); border:1px solid var(--line); border-radius:8px; padding:1rem 1.1rem; }
+    .metric-label { color:var(--muted); font-size:.75rem; text-transform:uppercase; letter-spacing:.08em; }
+    .metric-value { color:var(--ink); font-size:1.45rem; font-weight:700; margin-top:.2rem; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -102,7 +82,7 @@ for column, label, value in zip(
 st.divider()
 left, right = st.columns([1.1, .9], gap="large")
 with left:
-    st.markdown('<div class="result-kicker">Input channel</div><h2>Detect an issue</h2>', unsafe_allow_html=True)
+    st.markdown("### Detect an issue")
     case_id = st.text_input("Case ID (optional)", placeholder="e.g. INC-10482")
     text = st.text_area("Describe the support issue", height=220, placeholder="Example: My VPN disconnects whenever I try to access internal applications...")
     submitted = st.button("Detect issue", type="primary", use_container_width=True)
@@ -116,7 +96,7 @@ with left:
                 st.error(f"Detection failed: {exc}")
 with right:
     prediction = st.session_state.get("prediction")
-    st.markdown('<div class="result-kicker">Classification result</div><div class="result-title">Detected issue</div>', unsafe_allow_html=True)
+    st.markdown("### Detected issue")
     if not prediction:
         st.info("Enter a support issue and select Detect issue.")
     else:
@@ -124,10 +104,9 @@ with right:
             st.warning(f"Human review recommended: {prediction['routing_reason'].replace('_', ' ')}")
         else:
             st.success(f"Detected through {prediction['stage'].replace('_', ' ').title()}")
-        st.markdown(f'<span class="category-chip">{prediction["category"].replace("_", " ")}</span>', unsafe_allow_html=True)
-        st.metric("Confidence", f"{prediction['confidence']:.1%}")
+        st.metric("Issue category", prediction["category"].replace("_", " ").title(), f"{prediction['confidence']:.1%}")
         st.markdown("**Alternative categories**")
         for candidate in prediction["candidates"][1:]:
-            st.markdown(f'<div class="alt-row"><span>{candidate["category"].replace("_", " ").title()}</span><span class="alt-score">{candidate["score"]:.1%}</span></div>', unsafe_allow_html=True)
+            st.write(f"{candidate['category'].replace('_', ' ').title()} · {candidate['score']:.1%}")
         st.caption(prediction["confidence_semantics"])
         st.caption(f"Request ID: {prediction['request_id']}")

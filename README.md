@@ -141,3 +141,15 @@ ghcr.io/<owner>/support-case-classification-engine-ui
 ```
 
 In the GitHub repository settings, enable Actions and ensure the workflow has package write permission under **Settings > Actions > General > Workflow permissions**. Model artifacts and customer data remain excluded from the repository; publish them through your approved artifact storage or deployment process.
+
+
+ML Flow:
+
+.\.venv\Scripts\python.exe -m mlflow server `
+  --backend-store-uri sqlite:///mlflow.db `
+  --host 127.0.0.1 `
+  --port 5000
+
+Open:
+
+http://127.0.0.1:5000

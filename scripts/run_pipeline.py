@@ -64,14 +64,51 @@ def wait_for_stable_file(path: Path, seconds: float = 1.0) -> str:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Train and evaluate when the dataset changes")
-    parser.add_argument("--data", type=Path, required=True)
-    parser.add_argument("--artifact-dir", type=Path, default=Path("models/production"))
-    parser.add_argument("--watch", action="store_true", help="Retrain whenever the dataset file changes")
-    parser.add_argument("--interval", type=int, default=30, help="Watch interval in seconds")
-    parser.add_argument("--tracking-uri", default="file:./mlruns")
-    parser.add_argument("--experiment", default="support-case-classification")
-    parser.add_argument("--min-top1", type=float, default=0.80)
+    parser = argparse.ArgumentParser(
+        description="Train and evaluate when the dataset changes"
+    )
+
+    parser.add_argument(
+        "--data",
+        type=Path,
+        required=True
+    )
+
+    parser.add_argument(
+        "--artifact-dir",
+        type=Path,
+        default=Path("models/production")
+    )
+
+    parser.add_argument(
+        "--watch",
+        action="store_true",
+        help="Retrain whenever the dataset file changes"
+    )
+
+    parser.add_argument(
+        "--interval",
+        type=int,
+        default=30,
+        help="Watch interval in seconds"
+    )
+
+    parser.add_argument(
+        "--tracking-uri",
+        default="sqlite:///mlflow.db"
+    )
+
+    parser.add_argument(
+        "--experiment",
+        default="support-case-classification"
+    )
+
+    parser.add_argument(
+        "--min-top1",
+        type=float,
+        default=0.80
+    )
+
     args = parser.parse_args()
     data_path = args.data if args.data.is_absolute() else ROOT / args.data
     artifact_dir = args.artifact_dir if args.artifact_dir.is_absolute() else ROOT / args.artifact_dir

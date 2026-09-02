@@ -55,7 +55,7 @@ def generate(output: Path, rows: int, seed: int) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", type=Path, default=Path("data/cases_5000.csv"))
+    parser.add_argument("--output", type=Path, default=Path("data/cases.csv"))
     parser.add_argument("--rows", type=int, default=5000)
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()

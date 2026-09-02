@@ -63,3 +63,19 @@ def test_prediction_is_persisted_without_raw_text():
     assert saved["case_id"] == "SAVE-001"
     assert saved["request_id"] == response.json()["request_id"]
     assert "case_text" not in saved
+
+
+def test_drift_report_tracks_dataset_shape(tmp_path):
+    import pandas as pd
+
+    from scripts.drift_report import report
+
+    reference = tmp_path / "reference.csv"
+    candidate = tmp_path / "candidate.csv"
+    output = tmp_path / "drift.json"
+    pd.DataFrame({"text": ["vpn issue", "printer issue"], "label": ["network", "printer"]}).to_csv(reference, index=False)
+    pd.DataFrame({"text": ["vpn issue"], "label": ["network"]}).to_csv(candidate, index=False)
+    result = report(reference, candidate, output)
+    assert result["reference_records"] == 2
+    assert result["candidate_records"] == 1
+    assert output.exists()

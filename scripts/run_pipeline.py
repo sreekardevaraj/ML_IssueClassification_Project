@@ -21,7 +21,7 @@ def fingerprint(path: Path) -> str:
     return digest.hexdigest()
 
 
-def run_pipeline(data_path: Path, artifact_dir: Path) -> None:
+def run_pipeline(data_path: Path, artifact_dir: Path, tracking_uri: str, experiment: str, min_top1: float) -> None:
     staging_dir = artifact_dir.parent / f".{artifact_dir.name}.staging-{uuid4().hex}"
     lock_path = artifact_dir.parent / f".{artifact_dir.name}.lock"
     try:
@@ -29,8 +29,8 @@ def run_pipeline(data_path: Path, artifact_dir: Path) -> None:
     except FileExistsError:
         raise RuntimeError(f"Another pipeline is already running: {lock_path}")
     commands = [
-        [sys.executable, str(ROOT / "scripts" / "train.py"), "--data", str(data_path), "--output-dir", str(staging_dir)],
-        [sys.executable, str(ROOT / "scripts" / "evaluate.py"), "--data", str(data_path), "--artifact-dir", str(staging_dir)],
+        [sys.executable, str(ROOT / "scripts" / "train.py"), "--data", str(data_path), "--output-dir", str(staging_dir), "--tracking-uri", tracking_uri, "--experiment", experiment],
+        [sys.executable, str(ROOT / "scripts" / "evaluate.py"), "--data", str(data_path), "--artifact-dir", str(staging_dir), "--tracking-uri", tracking_uri, "--experiment", experiment, "--min-top1", str(min_top1)],
     ]
     try:
         for command in commands:
@@ -69,6 +69,9 @@ def main() -> None:
     parser.add_argument("--artifact-dir", type=Path, default=Path("models/production"))
     parser.add_argument("--watch", action="store_true", help="Retrain whenever the dataset file changes")
     parser.add_argument("--interval", type=int, default=30, help="Watch interval in seconds")
+    parser.add_argument("--tracking-uri", default="file:./mlruns")
+    parser.add_argument("--experiment", default="support-case-classification")
+    parser.add_argument("--min-top1", type=float, default=0.80)
     args = parser.parse_args()
     data_path = args.data if args.data.is_absolute() else ROOT / args.data
     artifact_dir = args.artifact_dir if args.artifact_dir.is_absolute() else ROOT / args.artifact_dir
@@ -83,7 +86,7 @@ def main() -> None:
         if current != previous:
             print(f"Dataset changed; running pipeline for {data_path}", flush=True)
             try:
-                run_pipeline(data_path, artifact_dir)
+                run_pipeline(data_path, artifact_dir, args.tracking_uri, args.experiment, args.min_top1)
                 previous = current
             except Exception as error:
                 if not args.watch:

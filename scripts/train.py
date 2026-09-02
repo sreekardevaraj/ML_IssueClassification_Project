@@ -16,10 +16,11 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 
 from app.domain.taxonomy import CATEGORY_BY_NAME
+from app.mlops.tracking import dataset_fingerprint, log_run
 from app.models.adapters import TfidfEmbedder
 
 
-def train(data_path: Path, output_dir: Path, seed: int) -> None:
+def train(data_path: Path, output_dir: Path, seed: int, tracking_uri: str, experiment: str) -> None:
     data = pd.read_csv(data_path)
     required = {"text", "label"}
     missing = required - set(data.columns)
@@ -76,11 +77,25 @@ def train(data_path: Path, output_dir: Path, seed: int) -> None:
             "records_total": len(data),
             "records_train": len(train_text),
             "records_test": len(test_text),
+            "dataset_sha256": dataset_fingerprint(data_path),
         }, indent=2),
         encoding="utf-8",
     )
     pd.DataFrame({"text": train_text, "label": [labels[index] for index in train_y]}).to_csv(output_dir / "train_records.csv", index=False)
     pd.DataFrame({"text": test_text, "label": [labels[index] for index in test_y]}).to_csv(output_dir / "test_records.csv", index=False)
+    run_id = log_run(
+        tracking_uri=tracking_uri,
+        experiment=experiment,
+        run_name="train",
+        parameters={"seed": seed, "records_total": len(data), "features": embedder.dimension},
+        metrics={},
+        artifacts=[output_dir / "xgboost.json", output_dir / "tfidf.joblib", output_dir / "manifest.json"],
+        tags={"stage": "training", "dataset_sha256": dataset_fingerprint(data_path)},
+    )
+    (output_dir / "manifest.json").write_text(
+        json.dumps({**json.loads((output_dir / "manifest.json").read_text()), "mlflow_run_id": run_id}, indent=2),
+        encoding="utf-8",
+    )
     print(f"Saved artifacts to {output_dir}")
 
 
@@ -89,5 +104,7 @@ if __name__ == "__main__":
     parser.add_argument("--data", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, default=Path("models/production"))
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--tracking-uri", default="file:./mlruns")
+    parser.add_argument("--experiment", default="support-case-classification")
     args = parser.parse_args()
-    train(args.data, args.output_dir, args.seed)
+    train(args.data, args.output_dir, args.seed, args.tracking_uri, args.experiment)

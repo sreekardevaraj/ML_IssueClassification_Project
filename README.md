@@ -104,6 +104,26 @@ After a watched retraining completes, restart the API so it loads the newly publ
 
 The generated 5K benchmark reports its metrics in `models/production/evaluation.json`. Because those records use controlled category templates, the metrics validate pipeline mechanics only; they do not establish production generalization. Replace the synthetic CSV with real support narratives before making accuracy claims.
 
+## MLOps
+
+Training and evaluation are tracked in MLflow. Run the local tracking server with:
+
+```powershell
+mlflow server --host 127.0.0.1 --port 5000
+```
+
+Then run the automatic pipeline with:
+
+```powershell
+python scripts/run_pipeline.py --data data/cases_5000.csv --artifact-dir models/production --tracking-uri http://127.0.0.1:5000 --experiment support-case-classification --min-top1 0.80 --watch
+```
+
+Open `http://127.0.0.1:5000` to inspect runs, parameters, dataset hashes, metrics, and model bundle artifacts. Compare a replacement dataset before retraining with:
+
+```powershell
+python scripts/drift_report.py --reference data/cases_5000.csv --candidate data/new_cases.csv --output reports/drift.json
+```
+
 ## Checks
 
 ```powershell

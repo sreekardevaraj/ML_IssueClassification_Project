@@ -9,6 +9,7 @@ data/*
 models/*
 !models/.gitkeep
 reports/
+mlruns/
 results/*
 !results/.gitkeep
 *.pyc

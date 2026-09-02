@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     artifact_dir: str = "models/production"
     results_dir: str = "results"
     persist_case_text: bool = False
+    mlflow_tracking_uri: str = "file:./mlruns"
+    mlflow_experiment: str = "support-case-classification"
+    min_top1_accuracy: float = 0.80
     first_stage_threshold: float = 0.62
     margin_threshold: float = 0.12
     enable_llm: bool = False

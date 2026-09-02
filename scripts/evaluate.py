@@ -12,6 +12,7 @@ from sklearn.metrics import classification_report, confusion_matrix, f1_score
 from sklearn.model_selection import train_test_split
 
 from app.domain.taxonomy import CATEGORY_BY_NAME
+from app.mlops.tracking import dataset_fingerprint, log_run
 from app.models.adapters import TfidfEmbedder, XGBoostClassifier
 
 
@@ -19,7 +20,7 @@ def top_k_accuracy(probabilities, expected, k: int) -> float:
     return float((probabilities.argsort(axis=1)[:, -k:] == expected[:, None]).any(axis=1).mean())
 
 
-def evaluate(data_path: Path, artifact_dir: Path) -> dict:
+def evaluate(data_path: Path, artifact_dir: Path, tracking_uri: str, experiment: str, min_top1: float) -> dict:
     data = pd.read_csv(data_path).dropna(subset=["text", "label"]).drop_duplicates()
     labels = json.loads((artifact_dir / "labels.json").read_text(encoding="utf-8"))
     label_to_id = {label: index for index, label in enumerate(labels)}
@@ -43,8 +44,22 @@ def evaluate(data_path: Path, artifact_dir: Path) -> dict:
             output_dict=True, zero_division=0,
         ),
         "confusion_matrix": confusion_matrix(expected, predicted, labels=list(range(len(labels)))).tolist(),
+        "dataset_sha256": dataset_fingerprint(data_path),
     }
     (artifact_dir / "evaluation.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    run_id = log_run(
+        tracking_uri=tracking_uri,
+        experiment=experiment,
+        run_name="evaluate",
+        parameters={"samples": len(test), "min_top1_accuracy": min_top1},
+        metrics={key: report[key] for key in ("top_1_accuracy", "top_2_accuracy", "top_3_accuracy", "macro_f1", "weighted_f1")},
+        artifacts=[artifact_dir / "evaluation.json", artifact_dir / "confusion_matrix.json"],
+        tags={"stage": "evaluation", "dataset_sha256": report["dataset_sha256"]},
+    )
+    report["mlflow_run_id"] = run_id
+    (artifact_dir / "evaluation.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    if report["top_1_accuracy"] < min_top1:
+        raise ValueError(f"Quality gate failed: Top-1 {report['top_1_accuracy']:.4f} < {min_top1:.4f}")
     print(json.dumps(report, indent=2))
     return report
 
@@ -53,5 +68,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=Path, required=True)
     parser.add_argument("--artifact-dir", type=Path, required=True)
+    parser.add_argument("--tracking-uri", default="file:./mlruns")
+    parser.add_argument("--experiment", default="support-case-classification")
+    parser.add_argument("--min-top1", type=float, default=0.80)
     args = parser.parse_args()
-    evaluate(args.data, args.artifact_dir)
+    evaluate(args.data, args.artifact_dir, args.tracking_uri, args.experiment, args.min_top1)

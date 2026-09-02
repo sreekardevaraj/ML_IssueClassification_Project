@@ -1,10 +1,22 @@
 services:
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.18.0
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow.db --default-artifact-root /mlflow/artifacts
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow_data:/mlflow
+    restart: unless-stopped
+
   classifier:
     build: .
     ports:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      SUPPORT_MLFLOW_TRACKING_URI: http://mlflow:5000
+      SUPPORT_MLFLOW_EXPERIMENT: support-case-classification
     volumes:
       - ./models:/app/models:ro
     read_only: true
@@ -19,6 +31,7 @@ services:
     ports:
       - "8501:8501"
     environment:
+      SUPPORT_MLFLOW_TRACKING_URI: http://mlflow:5000
       SUPPORT_API_URL: http://classifier:8000
     depends_on:
       classifier:
@@ -29,3 +42,6 @@ services:
       - /tmp
     security_opt:
       - no-new-privileges:true
+
+volumes:
+  mlflow_data:

@@ -101,10 +101,41 @@ def train(data_path: Path, output_dir: Path, seed: int, tracking_uri: str, exper
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data", type=Path, required=True)
-    parser.add_argument("--output-dir", type=Path, default=Path("models/production"))
-    parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--tracking-uri", default="file:./mlruns")
-    parser.add_argument("--experiment", default="support-case-classification")
+
+    parser.add_argument(
+        "--data",
+        type=Path,
+        required=True
+    )
+
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("models/production")
+    )
+
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42
+    )
+
+    parser.add_argument(
+        "--tracking-uri",
+        default="sqlite:///mlflow.db"
+    )
+
+    parser.add_argument(
+        "--experiment",
+        default="support-case-classification"
+    )
+
     args = parser.parse_args()
-    train(args.data, args.output_dir, args.seed, args.tracking_uri, args.experiment)
+
+    train(
+        args.data,
+        args.output_dir,
+        args.seed,
+        args.tracking_uri,
+        args.experiment
+    )

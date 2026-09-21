@@ -124,6 +124,8 @@ Open `http://127.0.0.1:5000` to inspect runs, parameters, dataset hashes, metric
 python scripts/drift_report.py --reference data/cases_5000.csv --candidate data/new_cases.csv --output reports/drift.json
 ```
 
+Operational monitoring events are also logged to MLflow under the `support-case-monitoring` experiment. The API records request latency, 5xx errors, 4xx validation/client errors, and SLA breaches for `/v1/*` endpoints. Drift checks log label-distribution deltas, text-length deltas, and drift-alert counts. The automated pipeline logs lock creation, blocked lock attempts, completion, and failure states so stale or interrupted pipeline runs are visible in MLflow.
+
 ## Checks
 
 ```powershell

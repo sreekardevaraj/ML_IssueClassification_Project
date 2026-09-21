@@ -14,7 +14,10 @@ class Settings(BaseSettings):
     persist_case_text: bool = False
     mlflow_tracking_uri: str = "file:./mlruns"
     mlflow_experiment: str = "support-case-classification"
+    mlflow_monitoring_experiment: str = "support-case-monitoring"
     min_top1_accuracy: float = 0.80
+    monitoring_enabled: bool = True
+    latency_sla_ms: float = 750.0
     first_stage_threshold: float = 0.62
     margin_threshold: float = 0.12
     enable_llm: bool = False

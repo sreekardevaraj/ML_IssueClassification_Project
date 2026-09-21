@@ -11,6 +11,9 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from app.mlops.tracking import log_monitoring_event
 
 
 def fingerprint(path: Path) -> str:
@@ -27,12 +30,28 @@ def run_pipeline(data_path: Path, artifact_dir: Path, tracking_uri: str, experim
     try:
         lock_path.mkdir()
     except FileExistsError:
+        log_monitoring_event(
+            tracking_uri=tracking_uri,
+            experiment="support-case-monitoring",
+            run_name="pipeline_lock_blocked",
+            metrics={"pipeline_lock_present": 1.0, "pipeline_success": 0.0},
+            parameters={"artifact_dir": artifact_dir, "lock_path": lock_path, "data_path": data_path},
+            tags={"stage": "pipeline_monitoring", "status": "blocked"},
+        )
         raise RuntimeError(f"Another pipeline is already running: {lock_path}")
     commands = [
         [sys.executable, str(ROOT / "scripts" / "train.py"), "--data", str(data_path), "--output-dir", str(staging_dir), "--tracking-uri", tracking_uri, "--experiment", experiment],
         [sys.executable, str(ROOT / "scripts" / "evaluate.py"), "--data", str(data_path), "--artifact-dir", str(staging_dir), "--tracking-uri", tracking_uri, "--experiment", experiment, "--min-top1", str(min_top1)],
     ]
     try:
+        log_monitoring_event(
+            tracking_uri=tracking_uri,
+            experiment="support-case-monitoring",
+            run_name="pipeline_started",
+            metrics={"pipeline_lock_present": 1.0},
+            parameters={"artifact_dir": artifact_dir, "lock_path": lock_path, "data_path": data_path},
+            tags={"stage": "pipeline_monitoring", "status": "started"},
+        )
         for command in commands:
             subprocess.run(command, cwd=ROOT, check=True)
         backup_dir = artifact_dir.parent / f".{artifact_dir.name}.previous"
@@ -43,7 +62,23 @@ def run_pipeline(data_path: Path, artifact_dir: Path, tracking_uri: str, experim
         staging_dir.rename(artifact_dir)
         if backup_dir.exists():
             shutil.rmtree(backup_dir)
+        log_monitoring_event(
+            tracking_uri=tracking_uri,
+            experiment="support-case-monitoring",
+            run_name="pipeline_completed",
+            metrics={"pipeline_lock_present": 0.0, "pipeline_success": 1.0},
+            parameters={"artifact_dir": artifact_dir, "data_path": data_path, "min_top1": min_top1},
+            tags={"stage": "pipeline_monitoring", "status": "completed"},
+        )
     except Exception:
+        log_monitoring_event(
+            tracking_uri=tracking_uri,
+            experiment="support-case-monitoring",
+            run_name="pipeline_failed",
+            metrics={"pipeline_lock_present": 1.0, "pipeline_success": 0.0},
+            parameters={"artifact_dir": artifact_dir, "lock_path": lock_path, "data_path": data_path},
+            tags={"stage": "pipeline_monitoring", "status": "failed"},
+        )
         if not artifact_dir.exists() and (artifact_dir.parent / f".{artifact_dir.name}.previous").exists():
             (artifact_dir.parent / f".{artifact_dir.name}.previous").rename(artifact_dir)
         raise

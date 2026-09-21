@@ -38,3 +38,33 @@ def log_run(
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def log_monitoring_event(
+    *,
+    tracking_uri: str,
+    experiment: str,
+    run_name: str,
+    metrics: dict[str, float],
+    parameters: dict[str, Any] | None = None,
+    tags: dict[str, str] | None = None,
+) -> str | None:
+    """Best-effort MLflow logging for operational monitoring.
+
+    Inference should not fail because a local MLflow server is unavailable, so
+    monitoring events are intentionally non-blocking from the caller's point of view.
+    """
+    try:
+        import mlflow
+
+        mlflow.set_tracking_uri(tracking_uri)
+        mlflow.set_experiment(experiment)
+        with mlflow.start_run(run_name=run_name) as run:
+            if parameters:
+                mlflow.log_params({key: str(value) for key, value in parameters.items()})
+            mlflow.log_metrics(metrics)
+            if tags:
+                mlflow.set_tags(tags)
+            return run.info.run_id
+    except Exception:
+        return None

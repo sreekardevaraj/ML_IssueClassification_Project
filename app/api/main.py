@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 import json
 from pathlib import Path
+from time import perf_counter
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
@@ -10,6 +11,7 @@ from app.core.settings import get_settings
 from app.domain.schemas import BatchRequest, BatchResponse, CaseInput, ModelInfo, Prediction
 from app.domain.taxonomy import TAXONOMY_VERSION
 from app.inference.service import ClassificationService
+from app.mlops.tracking import log_monitoring_event
 from app.models.adapters import TfidfEmbedder, XGBoostClassifier
 
 settings = get_settings()
@@ -58,9 +60,38 @@ app = FastAPI(title=settings.app_name, version=settings.model_version, lifespan=
 @app.middleware("http")
 async def request_id_middleware(request: Request, call_next):
     request.state.request_id = request.headers.get("X-Request-ID", str(uuid4()))
-    response = await call_next(request)
-    response.headers["X-Request-ID"] = request.state.request_id
-    return response
+    started = perf_counter()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        response.headers["X-Request-ID"] = request.state.request_id
+        return response
+    finally:
+        if settings.monitoring_enabled and request.url.path.startswith("/v1/"):
+            latency_ms = (perf_counter() - started) * 1000
+            log_monitoring_event(
+                tracking_uri=settings.mlflow_tracking_uri,
+                experiment=settings.mlflow_monitoring_experiment,
+                run_name="api_request",
+                metrics={
+                    "latency_ms": latency_ms,
+                    "error_count": 1.0 if status_code >= 500 else 0.0,
+                    "client_error_count": 1.0 if 400 <= status_code < 500 else 0.0,
+                    "sla_breach_count": 1.0 if latency_ms > settings.latency_sla_ms else 0.0,
+                },
+                parameters={
+                    "path": request.url.path,
+                    "method": request.method,
+                    "status_code": status_code,
+                    "latency_sla_ms": settings.latency_sla_ms,
+                },
+                tags={
+                    "stage": "api_monitoring",
+                    "request_id": request.state.request_id,
+                    "model_version": settings.model_version,
+                },
+            )
 
 
 @app.exception_handler(ValueError)
